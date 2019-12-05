@@ -16,9 +16,10 @@ adi_project_create adrv9009zu11eg 0 [list \
 
 adi_project_files adrv9009zu11eg [list \
   "system_top.v" \
+  "sfp_constr.xdc" \
   "../common/adrv9009zu11eg_spi.v" \
   "../common/adrv9009zu11eg_constr.xdc" \
   "../common/adrv2crr_fmc_constr.xdc" \
-  "$ad_hdl_dir/library/common/ad_iobuf.v" ]
+  "$ad_hdl_dir/library/common/ad_iobuf.v"]
 
 adi_project_run adrv9009zu11eg
