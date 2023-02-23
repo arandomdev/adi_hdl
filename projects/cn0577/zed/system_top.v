@@ -122,10 +122,6 @@ module system_top (
   wire          ltc_clk;
 
   assign gpio_i[63:34] = gpio_o[63:34];
-
-  // hardcode GPIO to always use two lanes configuration
-
-  assign twolanes_cntrl = 1'b1;
   assign cnv_en = cnv;
 
   // instantiations
