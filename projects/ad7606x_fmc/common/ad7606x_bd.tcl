@@ -3,12 +3,10 @@
 set DEV_CONFIG $ad_project_params(DEV_CONFIG)
 set ADC_N_BITS [expr {$DEV_CONFIG == 2 ? 18 : 16}]
 set ADC_TO_DMA_N_BITS [expr {$ADC_N_BITS == 16 ? 16 : 32}]
-set SIMPLE_STATUS_CRC $ad_project_params(SIMPLE_STATUS_CRC)
 set EXT_CLK $ad_project_params(EXT_CLK)
 set TOTAL_N_BITS_DMA [expr {$ADC_TO_DMA_N_BITS*8}]
 
 puts "build parameters: DEV_CONFIG: $DEV_CONFIG"
-puts "build parameters: SIMPLE_STATUS_CRC: $SIMPLE_STATUS_CRC"
 puts "build parameters: EXT_CLK: $EXT_CLK"
 
 # data, read and write lines
@@ -32,7 +30,6 @@ ad_ip_instance axi_ad7606x axi_ad7606x
 ad_ip_parameter axi_ad7606x CONFIG.DEV_CONFIG $DEV_CONFIG
 ad_ip_parameter axi_ad7606x CONFIG.ADC_N_BITS $ADC_N_BITS
 ad_ip_parameter axi_ad7606x CONFIG.ADC_TO_DMA_N_BITS $ADC_TO_DMA_N_BITS
-ad_ip_parameter axi_ad7606x CONFIG.ADC_READ_MODE $SIMPLE_STATUS_CRC
 ad_ip_parameter axi_ad7606x CONFIG.EXTERNAL_CLK $EXT_CLK
 
 ad_ip_instance axi_pwm_gen axi_pwm_gen
