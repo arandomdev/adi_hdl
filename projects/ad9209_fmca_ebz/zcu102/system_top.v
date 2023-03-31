@@ -185,7 +185,7 @@ module system_top  #(
                fpga_syncout_1_p}));   // 62
   end
   endgenerate
-  /* Board GPIOS. Buttons, LEDs, etc... */
+
   assign gpio_i[20: 8] = gpio_bd_i;
   assign gpio_bd_o = gpio_o[7:0];
 

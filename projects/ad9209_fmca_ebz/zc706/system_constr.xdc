@@ -1,6 +1,4 @@
-#
 ## mxfe
-#
 
 set_property         -dict {PACKAGE_PIN V23   IOSTANDARD LVCMOS25               } [get_ports agc0[0]          ]    ; ## FMC0_LA17_CC_P      IO_L24P_T3_13 
 set_property         -dict {PACKAGE_PIN W24   IOSTANDARD LVCMOS25               } [get_ports agc0[1]          ]    ; ## FMC0_LA17_CC_N      IO_L24N_T3_13
@@ -61,4 +59,3 @@ set_property         -dict {PACKAGE_PIN AD23  IOSTANDARD LVCMOS25               
 set_property         -dict {PACKAGE_PIN AF24  IOSTANDARD LVCMOS25               } [get_ports spi1_sdio        ]    ; ## FMC0_LA12_N         IO_L9N_T1_DQS_11
 set_property         -dict {PACKAGE_PIN AF22  IOSTANDARD LVDS_25  DIFF_TERM TRUE} [get_ports sysref2_n        ]    ; ## FMC0_CLK0_M2C_N     IO_L12N_T1_MRCC_11
 set_property         -dict {PACKAGE_PIN AE22  IOSTANDARD LVDS_25  DIFF_TERM TRUE} [get_ports sysref2_p        ]    ; ## FMC0_CLK0_M2C_P     IO_L12P_T1_MRCC_11
-

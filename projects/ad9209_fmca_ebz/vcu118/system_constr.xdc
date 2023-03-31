@@ -1,6 +1,4 @@
-#
 ## mxfe
-#
 
 set_property         -dict {PACKAGE_PIN R34  IOSTANDARD LVCMOS18                                     } [get_ports agc0[0]                   ]    ; ## IO_L13P_T2L_N0_GC_QBC_45
 set_property         -dict {PACKAGE_PIN P34  IOSTANDARD LVCMOS18                                     } [get_ports agc0[1]                   ]    ; ## IO_L13N_T2L_N1_GC_QBC_45
@@ -64,7 +62,4 @@ set_property         -dict {PACKAGE_PIN AH34 IOSTANDARD LVCMOS18                
 set_property         -dict {PACKAGE_PIN AM32 IOSTANDARD LVDS     DIFF_TERM_ADV TERM_100 DQS_BIAS TRUE} [get_ports sysref2_n                 ]    ; ## IO_L13N_T2L_N1_GC_QBC_43
 set_property         -dict {PACKAGE_PIN AL32 IOSTANDARD LVDS     DIFF_TERM_ADV TERM_100 DQS_BIAS TRUE} [get_ports sysref2_p                 ]    ; ## IO_L13P_T2L_N0_GC_QBC_43
 
-set_property         -dict {PACKAGE_PIN AK35 IOSTANDARD LVCMOS18 PULLTYPE PULLUP                     } [get_ports vadj_1v8_pgood            ]    ; ## IO_T1U_N12_43_AK35 
-
-
-
+set_property         -dict {PACKAGE_PIN AK35 IOSTANDARD LVCMOS18 PULLTYPE PULLUP                     } [get_ports vadj_1v8_pgood            ]    ; ## IO_T1U_N12_43_AK35

@@ -1,4 +1,3 @@
-
 # Primary clock definitions
 
 # Set clocks depending on the requested LANE_RATE paramter from the util_adxcvr block 
@@ -39,7 +38,6 @@ set_input_delay -clock [get_clocks rx_device_clk] -add_delay\
   [get_property PERIOD [get_clocks rx_device_clk]] \
   [get_ports {sysref2_*}]
 
-
 # For transceiver output clocks use reference clock divided by one 
 # This will help autoderive the clocks correcly
 set_case_analysis -quiet 0 [get_pins -quiet -hier *_channel/TXSYSCLKSEL[0]]
@@ -53,4 +51,3 @@ set_case_analysis -quiet 0 [get_pins -quiet -hier *_channel/RXSYSCLKSEL[1]]
 set_case_analysis -quiet 1 [get_pins -quiet -hier *_channel/RXOUTCLKSEL[0]]
 set_case_analysis -quiet 1 [get_pins -quiet -hier *_channel/RXOUTCLKSEL[1]]
 set_case_analysis -quiet 0 [get_pins -quiet -hier *_channel/RXOUTCLKSEL[2]]
-

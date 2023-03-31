@@ -12,4 +12,3 @@ create_clock -name rx_div_clk       -period  4 [get_pins i_system_wrapper/system
 set_input_delay -clock [get_clocks rx_device_clk] \
   [get_property PERIOD [get_clocks rx_device_clk]] \
   [get_ports {sysref2_*}]
-

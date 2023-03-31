@@ -15,7 +15,6 @@ source $ad_hdl_dir/projects/scripts/adi_board.tcl
 #      make JESD_MODE=64B66B RX_LANE_RATE=16.50 RX_JESD_M=4 RX_JESD_L=4 RX_JESD_S=2 RX_JESD_NP=12
 #      make JESD_MODE=8B10B  RX_JESD_L=4 RX_JESD_M=8
 
-#
 # Parameter description:
 #   JESD_MODE : Used link layer encoder mode
 #      64B66B - 64b66b link layer defined in JESD 204C
@@ -28,7 +27,6 @@ source $ad_hdl_dir/projects/scripts/adi_board.tcl
 #   RX_JESD_NP : Number of bits per sample
 #   RX_NUM_LINKS : Number of links
 #   RX_KS_PER_CHANNEL : Number of samples stored in internal buffers in kilosamples per converter (M)
-#
 
 adi_project ad9209_fmca_ebz_vcu118 0 [list \
   JESD_MODE         [get_env_param JESD_MODE      8B10B ] \
@@ -56,4 +54,3 @@ if {$ADI_USE_OOC_SYNTHESIS == 1} {
 }
 
 adi_project_run ad9209_fmca_ebz_vcu118
-

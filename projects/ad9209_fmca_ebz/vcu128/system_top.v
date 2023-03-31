@@ -50,16 +50,16 @@ module system_top #(
   output                                ddr4_act_n,
   output [16:0]                         ddr4_addr,
   output [ 1:0]                         ddr4_ba,
-  output [ 0:0]                         ddr4_bg,
+  output                                ddr4_bg,
   output                                ddr4_ck_p,
   output                                ddr4_ck_n,
-  output [ 0:0]                         ddr4_cke,
+  output                                ddr4_cke,
   output [ 1:0]                         ddr4_cs_n,
   inout  [ 8:0]                         ddr4_dm_n,
   inout  [71:0]                         ddr4_dq,
   inout  [ 8:0]                         ddr4_dqs_p,
   inout  [ 8:0]                         ddr4_dqs_n,
-  output [ 0:0]                         ddr4_odt,
+  output                                ddr4_odt,
   output                                ddr4_reset_n,
 
   output                                mdio_mdc,
@@ -80,26 +80,26 @@ module system_top #(
   input                                 vadj_1v8_pgood,
 
   // FMC HPC IOs
-  input   [ 1:0]                        agc0,
-  input   [ 1:0]                        agc1,
-  input   [ 1:0]                        agc2,
-  input   [ 1:0]                        agc3,
+  input  [ 1:0]                         agc0,
+  input  [ 1:0]                         agc1,
+  input  [ 1:0]                         agc2,
+  input  [ 1:0]                         agc3,
   input                                 clkin8_n,
   input                                 clkin8_p,
   input                                 fpga_refclk_in_n,
   input                                 fpga_refclk_in_p,
-  input   [RX_JESD_L*RX_NUM_LINKS-1:0]  rx_data_n,
-  input   [RX_JESD_L*RX_NUM_LINKS-1:0]  rx_data_p,
+  input  [RX_JESD_L*RX_NUM_LINKS-1:0]   rx_data_n,
+  input  [RX_JESD_L*RX_NUM_LINKS-1:0]   rx_data_p,
   output                                fpga_syncout_0_n,
   output                                fpga_syncout_0_p,
   inout                                 fpga_syncout_1_n,
   inout                                 fpga_syncout_1_p,
-  inout   [10:0]                        gpio,
+  inout  [10:0]                         gpio,
   inout                                 hmc_gpio1,
   output                                hmc_sync,
-  input   [ 1:0]                        irqb,
+  input  [ 1:0]                         irqb,
   output                                rstb,
-  output  [ 1:0]                        rxen,
+  output [ 1:0]                         rxen,
   output                                spi0_csb,
   input                                 spi0_miso,
   output                                spi0_mosi,
@@ -113,17 +113,17 @@ module system_top #(
 
   // internal signals
 
-  wire  [63:0]              gpio_i;
-  wire  [63:0]              gpio_o;
-  wire  [63:0]              gpio_t;
-  wire  [ 7:0]              spi_csn;
+  wire   [63:0]             gpio_i;
+  wire   [63:0]             gpio_o;
+  wire   [63:0]             gpio_t;
+  wire   [ 7:0]             spi_csn;
   wire                      spi_mosi;
   wire                      spi_miso;
   wire                      spi1_miso;
 
   wire                      ref_clk;
   wire                      sysref;
-  wire  [RX_NUM_LINKS-1:0]  rx_syncout;
+  wire   [RX_NUM_LINKS-1:0] rx_syncout;
 
   wire                      clkin8;
   wire                      rx_device_clk;
@@ -206,10 +206,10 @@ module system_top #(
   assign gpio_i[52] = irqb[0];
   assign gpio_i[53] = irqb[1];
 
-  assign hmc_sync         = gpio_o[54];
-  assign rstb             = gpio_o[55];
-  assign rxen[0]          = gpio_o[56];
-  assign rxen[1]          = gpio_o[57];
+  assign hmc_sync   = gpio_o[54];
+  assign rstb       = gpio_o[55];
+  assign rxen[0]    = gpio_o[56];
+  assign rxen[1]    = gpio_o[57];
 
   generate
   if (RX_NUM_LINKS > 1 & JESD_MODE == "8B10B") begin

@@ -1,6 +1,4 @@
-#
 ## mxfe
-#
 
 set_property         -dict {PACKAGE_PIN F18  IOSTANDARD LVCMOS18                       } [get_ports agc0[0]                   ]    ; ## IO_L13P_T2L_N0_GC_QBC_71  
 set_property         -dict {PACKAGE_PIN E17  IOSTANDARD LVCMOS18                       } [get_ports agc0[1]                   ]    ; ## IO_L13N_T2L_N1_GC_QBC_71  
