@@ -5,10 +5,10 @@ module fft_config (
   input wire [7:0] scaleSch,
   input wire forward,
 
-  input wire       tready,
-  output reg       tvalid,
-  output reg       tlast,
-  output reg [8:0] tdata,
+  input wire        tready,
+  output reg        tvalid,
+  output reg        tlast,
+  output reg [15:0] tdata,
 
   input wire commit
 );
@@ -55,7 +55,7 @@ module fft_config (
         // Load data
         tvalid <= 1;
         tlast <= 1;
-        tdata <= {scaleSch, forward};
+        tdata <= {7'b0, scaleSch, forward};
       end
       // default: Unreachable
     endcase

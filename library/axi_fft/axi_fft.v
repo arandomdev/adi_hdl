@@ -29,22 +29,22 @@ module axi_fft #(
   input              s_axi_rready,
 
   // AXIS Master Interface for FFT Core data input
-  input  wire        i_tready,
-  output wire        i_tvalid,
-  output wire        i_tlast,
-  output wire [63:0] i_tdata,
+  input  wire        m_axis_i_tready,
+  output wire        m_axis_i_tvalid,
+  output wire        m_axis_i_tlast,
+  output wire [63:0] m_axis_i_tdata,
 
   // AXIS Slave Interface for FFT Core data output
-  output wire        o_tready,
-  input  wire        o_tvalid,
-  input  wire        o_tlast,
-  input  wire [63:0] o_tdata,
+  output wire        s_axis_o_tready,
+  input  wire        s_axis_o_tvalid,
+  input  wire        s_axis_o_tlast,
+  input  wire [63:0] s_axis_o_tdata,
 
-  // AXIS Slave Interface for FFT Core config
-  output wire       c_tready,
-  input  wire       c_tvalid,
-  input  wire       c_tlast,
-  input  wire [8:0] c_tdata
+  // AXIS Master Interface for FFT Core config
+  input  wire        m_axis_c_tready,
+  output wire        m_axis_c_tvalid,
+  output wire        m_axis_c_tlast,
+  output wire [15:0] m_axis_c_tdata
 );
   // Definitions
   // up_axi emits DWORD addresses, hence 14 bit addresses
@@ -149,10 +149,10 @@ module axi_fft #(
     .wAddr(iWAddr),
     .wData(iWData),
     .wEn(iWEn),
-    .tready(i_tready),
-    .tvalid(i_tvalid),
-    .tlast(i_tlast),
-    .tdata(i_tdata),
+    .tready(m_axis_i_tready),
+    .tvalid(m_axis_i_tvalid),
+    .tlast(m_axis_i_tlast),
+    .tdata(m_axis_i_tdata),
     .trig(iTrig),
     .streaming(iStreaming));
 
@@ -163,10 +163,10 @@ module axi_fft #(
     .resetn(up_resetn),
     .rAddr(orAddr),
     .rData(oRData),
-    .tready(o_tready),
-    .tvalid(o_tvalid),
-    .tlast(o_tlast),
-    .tdata(o_tdata),
+    .tready(s_axis_o_tready),
+    .tvalid(s_axis_o_tvalid),
+    .tlast(s_axis_o_tlast),
+    .tdata(s_axis_o_tdata),
     .receiving(oReceiving));
 
   fft_config i_fft_config (
@@ -174,10 +174,10 @@ module axi_fft #(
     .resetn(up_resetn),
     .scaleSch(reg_fftConfig[8:1]),
     .forward(reg_fftConfig[0]),
-    .tready(c_tready),
-    .tvalid(c_tvalid),
-    .tlast(c_tlast),
-    .tdata(c_tdata),
+    .tready(m_axis_c_tready),
+    .tvalid(m_axis_c_tvalid),
+    .tlast(m_axis_c_tlast),
+    .tdata(m_axis_c_tdata),
     .commit(cCommit)
   );
 
