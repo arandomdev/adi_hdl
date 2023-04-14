@@ -28,6 +28,8 @@ module axi_fft #(
   output      [31:0] s_axi_rdata,
   input              s_axi_rready,
 
+  // TODO: Resetn for FFT Core
+
   // AXIS Master Interface for FFT Core data input
   input  wire        m_axis_i_tready,
   output wire        m_axis_i_tvalid,
@@ -53,9 +55,10 @@ module axi_fft #(
   localparam [13:0] ADDR_SCRATCH =    'h0002;
   localparam [13:0] ADDR_IDENT =      'h0003;
   localparam [13:0] ADDR_FFT_CONFIG = 'h0004;
+  localparam [13:0] ADDR_STATUS =     'h0005;
 
-  localparam [13:0] ADDR_RESET =      'h0020;
-  localparam [13:0] ADDR_INPUT_TRIG = 'h0021;
+  localparam [13:0] ADDR_RESET =       'h0020;
+  localparam [13:0] ADDR_INPUT_TRIG =  'h0021;
   localparam [13:0] ADDR_CONFIG_TRIG = 'h0022;
 
   localparam [13:0] ADDR_INPUT_START = 'h0040;
@@ -65,13 +68,15 @@ module axi_fft #(
 
   localparam [31:0] DEFAULT_SCRATCH = 32'h00000000;
   localparam [31:0] DEFAULT_FFT_CONFIG = 32'h00000001;
+  localparam [31:0] DEFAULT_STATUS = 32'h00000000;
 
   // AXI registers, 32bit words
   reg [31:0] reg_version = 32'h00000001;
   reg [31:0] reg_peri_id = PERI_ID;
   reg [31:0] reg_scratch = DEFAULT_SCRATCH;
   reg [31:0] reg_ident = IDENT;
-  reg [31:0] reg_fftConfig = DEFAULT_FFT_CONFIG;
+  reg [31:0] reg_fftConfig = DEFAULT_FFT_CONFIG; // {ScaleSch[8:1], forward[0]}
+  reg [31:0] reg_status = DEFAULT_STATUS; // status[0] = done
 
   // Internal connections for up_axi
   wire up_clk = s_axi_aclk; // same as AXI
@@ -97,7 +102,7 @@ module axi_fft #(
   // Internal connections for fft_data_output
   wire [$clog2(NFFT*2)-1:0] oRAddr;
   wire [31:0]               oRData;
-  wire                      oReceiving;
+  wire                      oReceived;
 
   // constant assignment to output address for same clock reads
   assign oRAddr = (up_resetn &&
@@ -107,7 +112,7 @@ module axi_fft #(
                    up_raddr_s - ADDR_OUTPUT_START : 0;
 
   // Internal connections for fft_config
-  reg cCommit;
+  reg cCommitTrig;
 
   // Instances
   up_axi #(
@@ -159,15 +164,15 @@ module axi_fft #(
   fft_data_output #(
     .NFFT(NFFT)
   ) i_fft_data_output (
-    .clk(up_resetn),
+    .clk(up_clk),
     .resetn(up_resetn),
-    .rAddr(orAddr),
+    .rAddr(oRAddr),
     .rData(oRData),
     .tready(s_axis_o_tready),
     .tvalid(s_axis_o_tvalid),
     .tlast(s_axis_o_tlast),
     .tdata(s_axis_o_tdata),
-    .receiving(oReceiving));
+    .received(oReceived));
 
   fft_config i_fft_config (
     .clk(up_clk),
@@ -178,7 +183,7 @@ module axi_fft #(
     .tvalid(m_axis_c_tvalid),
     .tlast(m_axis_c_tlast),
     .tdata(m_axis_c_tdata),
-    .commit(cCommit)
+    .commit(cCommitTrig)
   );
 
   // registers read
@@ -197,11 +202,12 @@ module axi_fft #(
         end else begin
           // Register read
           case (up_raddr_s)
-            ADDR_VERSION: up_rdata <= reg_version;
-            ADDR_PERI_ID: up_rdata <= reg_peri_id;
-            ADDR_SCRATCH: up_rdata <= reg_scratch;
-            ADDR_IDENT: up_rdata <= reg_ident;
+            ADDR_VERSION:    up_rdata <= reg_version;
+            ADDR_PERI_ID:    up_rdata <= reg_peri_id;
+            ADDR_SCRATCH:    up_rdata <= reg_scratch;
+            ADDR_IDENT:      up_rdata <= reg_ident;
             ADDR_FFT_CONFIG: up_rdata <= reg_fftConfig;
+            ADDR_STATUS:     up_rdata <= reg_status;
             default: up_rdata <= 'd0;
           endcase
         end
@@ -214,7 +220,10 @@ module axi_fft #(
   // registers write
   always @(posedge up_clk) begin
     if (up_resetn == 1'b0) begin
+      // Reset registers
       reg_scratch <= DEFAULT_SCRATCH;
+      reg_fftConfig <= DEFAULT_FFT_CONFIG;
+      reg_status <= DEFAULT_STATUS;
     end else begin
       if (up_wreq_s == 1'b1) begin
         case (up_waddr_s)
@@ -228,7 +237,7 @@ module axi_fft #(
   // Write FFT input
   always @(posedge up_clk) begin
     if (up_resetn == 1'b1 &&
-      up_waddr_s &&
+      up_wreq_s &&
       up_waddr_s >= ADDR_INPUT_START &&
       up_waddr_s < ADDR_INPUT_END) begin
         iWAddr <= up_waddr_s - ADDR_INPUT_START;
@@ -241,18 +250,22 @@ module axi_fft #(
 
   // Write triggers
   always @(posedge up_clk) begin
-    if (up_resetn == 1'b1 && up_waddr_s) begin
+    if (up_resetn == 1'b1 && up_wreq_s) begin
       case (up_waddr_s)
-        ADDR_INPUT_TRIG: iTrig <= 1;
-        ADDR_CONFIG_TRIG: cCommit <= 1;
+        ADDR_INPUT_TRIG: begin
+          iTrig <= 1;
+          // De-assert trans done bit when triggering a new block
+          reg_status[0] <= 0;
+        end
+        ADDR_CONFIG_TRIG: cCommitTrig <= 1;
         default: begin
           iTrig <= 0;
-          cCommit <= 0;
+          cCommitTrig <= 0;
         end
       endcase
     end else begin
       iTrig <= 0;
-      cCommit <= 0;
+      cCommitTrig <= 0;
     end
   end
 
@@ -269,6 +282,22 @@ module axi_fft #(
       end else begin
         up_resetn <= 1'd1;
       end
+    end
+  end
+
+  // Reset for fft_data_input write lines
+  always @(posedge up_clk) begin
+    if (up_resetn == 1'b0) begin
+      iWAddr <= 0;
+      iWData <= 0;
+      iWEn <= 0;
+    end
+  end
+
+  // Assert status done when received goes hi
+  always @(posedge up_clk) begin
+    if (up_resetn == 1'b1 && oReceived) begin
+      reg_status[0] <= 1'b1;
     end
   end
 endmodule

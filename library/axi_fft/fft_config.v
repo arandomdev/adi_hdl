@@ -14,7 +14,7 @@ module fft_config (
 );
   // Definitions
   localparam STATE_IDLE = 0;
-  localparam STATE_WAIT_READY = 1;
+  localparam STATE_TRANSMIT = 1;
 
   // State machine registers
   reg currState = 0;
@@ -26,16 +26,16 @@ module fft_config (
 
     end else if (currState == STATE_IDLE) begin
       if (commit == 1) begin
-        nextState = STATE_WAIT_READY;
+        nextState = STATE_TRANSMIT;
       end else begin
         nextState = STATE_IDLE;
       end
 
-    end else if (currState == STATE_WAIT_READY) begin
+    end else if (currState == STATE_TRANSMIT) begin
       if (tready == 1) begin
         nextState = STATE_IDLE;
       end else begin
-        nextState = STATE_WAIT_READY;
+        nextState = STATE_TRANSMIT;
       end
 
     end else begin
@@ -51,7 +51,7 @@ module fft_config (
         tdata <= 0;
       end
 
-      STATE_WAIT_READY: begin
+      STATE_TRANSMIT: begin
         // Load data
         tvalid <= 1;
         tlast <= 1;
@@ -59,5 +59,8 @@ module fft_config (
       end
       // default: Unreachable
     endcase
+
+    // advance state
+    currState <= nextState;
   end
 endmodule

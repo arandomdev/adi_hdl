@@ -12,7 +12,7 @@ module fft_data_input #(
   // M AXIS Interface
   input wire        tready,
   output reg        tvalid,
-  output reg        tlast,
+  output wire       tlast,
   output reg [63:0] tdata, // {IM, RE}
 
   input wire trig, // trigger data stream, single clk pulse
@@ -21,13 +21,12 @@ module fft_data_input #(
   // Definitions
   // State machine state
   localparam STATE_IDLE = 0;
-  localparam STATE_WAIT_READY = 1;
-  localparam STATE_STREAMING = 2;
+  localparam STATE_STREAMING = 1;
 
   // State machine registers
-  reg [1:0] currState = 0;
-  reg [1:0] nextState = 0;
-  reg [$clog2(NFFT)-1:0] transI = 0;
+  reg currState = 0;
+  reg nextState = 0;
+  reg [$clog2(NFFT*2)-1:0] transI = 0;
   
   reg [31:0] ram [(NFFT*2)-1:0];
 
@@ -39,6 +38,8 @@ module fft_data_input #(
     end
   end
 
+  assign tlast = streaming && transI == NFFT;
+
   // State machine next state logic
   always @(*) begin
     if (resetn == 0) begin
@@ -46,24 +47,18 @@ module fft_data_input #(
 
     end else if (currState == STATE_IDLE) begin
       if (trig == 1) begin
-        nextState = STATE_WAIT_READY;
-      end else begin
-        nextState = STATE_IDLE;
-      end
-
-    end else if (currState == STATE_WAIT_READY) begin
-      if (tready == 1) begin
         nextState = STATE_STREAMING;
       end else begin
-        nextState = STATE_WAIT_READY;
+        nextState = STATE_IDLE;
       end
 
     end else if (currState == STATE_STREAMING) begin
-      if (transI == NFFT-1) begin
+      if (tlast && tready) begin
         nextState = STATE_IDLE;
       end else begin
         nextState = STATE_STREAMING;
       end
+      
     end else begin
       nextState = STATE_IDLE;
     end
@@ -75,26 +70,27 @@ module fft_data_input #(
       STATE_IDLE: begin
         // Reset
         tvalid <= 0;
-        tlast <= 0;
         tdata <= 0;
 
         transI <= 0;
-      end 
-
-      STATE_WAIT_READY: begin
-        tvalid <= 1;
-        tdata <= {ram[1], ram[0]}; // preload first transactions
-        
-        streaming <= 1;
+        streaming <= 0;
       end
 
       STATE_STREAMING: begin
-        // Feed one by one, assert tlast on last
-        tdata <= {ram[(transI << 1)-1], ram[transI << 1]};
-        transI <= transI + 1;
+        // begin transactions
+        if (tready && tlast) begin
+          tvalid <= 0;
+          streaming <= 0;
+        end else begin
+          tvalid <= 1;
+          streaming <= 1;
+        end
 
-        if (transI == NFFT-1) begin
-          tlast <= 1;
+        // Feed one by one, assert tlast on last
+        // If tready is deassered during transfer, wait
+        if (tready && !tlast) begin
+          tdata <= {ram[(transI << 1)+1], ram[transI << 1]};
+          transI <= transI + 1; // Increment index
         end
       end
       // default: unreachable
