@@ -1,11 +1,15 @@
 module fft_data_output #(
-  parameter NFFT = 8
+  parameter integer NFFT = 3,
+
+  parameter integer POINT_SIZE = $pow(2, NFFT),
+  parameter integer N_ELEMENTS = POINT_SIZE * 2, // RE and IM pair for each point
+  parameter integer ELEMENTS_ADDR_SIZE = $clog2(N_ELEMENTS)
 ) (
   input wire clk,
   input wire resetn,
 
   // Async RAM interface
-  input wire [$clog2(NFFT*2)-1:0] rAddr,
+  input wire [ELEMENTS_ADDR_SIZE-1:0] rAddr,
   output wire [31:0]              rData,
 
   // S AXIS Interface
@@ -25,10 +29,10 @@ module fft_data_output #(
   // State machine registers
   reg [1:0] currState = 0;
   reg [1:0] nextState = 0;
-  reg [$clog2(NFFT*2)-1:0] transI = 0;
+  reg [ELEMENTS_ADDR_SIZE-1:0] transI = 0;
 
   // RAM and async RAM read
-  reg [31:0] ram [(NFFT*2)-1:0];
+  reg [31:0] ram [N_ELEMENTS-1:0];
   assign rData = ram[rAddr];
 
   always @(*) begin
@@ -43,7 +47,7 @@ module fft_data_output #(
       end
 
     end else if (currState == STATE_RECEIVING) begin
-      if (transI == NFFT || tlast) begin
+      if (transI == POINT_SIZE || tlast) begin
         nextState = STATE_DONE;
       end else begin
         nextState = STATE_RECEIVING;

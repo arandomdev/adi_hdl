@@ -1,11 +1,16 @@
 module fft_data_input #(
-  parameter NFFT = 8
+  parameter integer NFFT = 3,
+
+  // Computed parameters
+  parameter integer POINT_SIZE = $pow(2, NFFT),
+  parameter integer N_ELEMENTS = POINT_SIZE * 2,
+  parameter integer ELEMENTS_ADDR_SIZE = $clog2(N_ELEMENTS)
 ) (
   input wire clk,
   input wire resetn,
 
   // RAM Write Interface
-  input wire [$clog2(NFFT*2)-1:0]  wAddr,
+  input wire [ELEMENTS_ADDR_SIZE-1:0] wAddr,
   input wire [31:0]                wData,
   input wire                       wEn,
 
@@ -26,9 +31,9 @@ module fft_data_input #(
   // State machine registers
   reg currState = 0;
   reg nextState = 0;
-  reg [$clog2(NFFT*2)-1:0] transI = 0;
+  reg [ELEMENTS_ADDR_SIZE-1:0] transI = 0;
   
-  reg [31:0] ram [(NFFT*2)-1:0];
+  reg [31:0] ram [N_ELEMENTS-1:0];
 
   // RAM write
   always @(posedge clk) begin
@@ -38,7 +43,7 @@ module fft_data_input #(
     end
   end
 
-  assign tlast = streaming && transI == NFFT;
+  assign tlast = streaming && transI == POINT_SIZE;
 
   // State machine next state logic
   always @(*) begin
