@@ -28,8 +28,6 @@ module axi_fft #(
   output      [31:0] s_axi_rdata,
   input              s_axi_rready,
 
-  // TODO: Resetn for FFT Core
-
   // AXIS Master Interface for FFT Core data input
   input  wire        m_axis_i_tready,
   output wire        m_axis_i_tvalid,
@@ -46,7 +44,7 @@ module axi_fft #(
   input  wire        m_axis_c_tready,
   output wire        m_axis_c_tvalid,
   output wire        m_axis_c_tlast,
-  output wire [15:0] m_axis_c_tdata
+  output wire [7:0] m_axis_c_tdata
 );
   // Definitions
   // up_axi emits DWORD addresses, hence 14 bit addresses
@@ -67,7 +65,7 @@ module axi_fft #(
   localparam [13:0] ADDR_OUTPUT_END = ADDR_OUTPUT_START + (NFFT*2);
 
   localparam [31:0] DEFAULT_SCRATCH = 32'h00000000;
-  localparam [31:0] DEFAULT_FFT_CONFIG = 32'h00000001;
+  localparam [31:0] DEFAULT_FFT_CONFIG = 32'h0000000D; // {0110, forward}
   localparam [31:0] DEFAULT_STATUS = 32'h00000000;
 
   // AXI registers, 32bit words
@@ -75,7 +73,7 @@ module axi_fft #(
   reg [31:0] reg_peri_id = PERI_ID;
   reg [31:0] reg_scratch = DEFAULT_SCRATCH;
   reg [31:0] reg_ident = IDENT;
-  reg [31:0] reg_fftConfig = DEFAULT_FFT_CONFIG; // {ScaleSch[8:1], forward[0]}
+  reg [31:0] reg_fftConfig = DEFAULT_FFT_CONFIG; // {ScaleSch[4:1], forward[0]}
   reg [31:0] reg_status = DEFAULT_STATUS; // status[0] = done
 
   // Internal connections for up_axi
@@ -177,7 +175,7 @@ module axi_fft #(
   fft_config i_fft_config (
     .clk(up_clk),
     .resetn(up_resetn),
-    .scaleSch(reg_fftConfig[8:1]),
+    .scaleSch(reg_fftConfig[4:1]),
     .forward(reg_fftConfig[0]),
     .tready(m_axis_c_tready),
     .tvalid(m_axis_c_tvalid),
