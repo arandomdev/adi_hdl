@@ -8,6 +8,7 @@ global VIVADO_IP_LIBRARY
 adi_ip_create axi_fft
 adi_ip_files axi_fft [list \
     "$ad_hdl_dir/library/common/up_axi.v" \
+    "$ad_hdl_dir/library/common/ad_mem.v" \
     "fft_data_input.v" \
     "fft_data_output.v" \
     "fft_config.v" \

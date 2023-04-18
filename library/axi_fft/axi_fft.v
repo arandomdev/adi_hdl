@@ -108,9 +108,10 @@ module axi_fft #(
   wire [31:0]                  oRData;
   wire                         oReceived;
 
-  // constant assignment to output address for same clock reads
+  // constant assignment to output address for one clock reads
+  reg oRDataStalled = 1'b0;
   assign oRAddr = (up_resetn &&
-                   up_rreq_s &&
+                   (up_rreq_s || oRDataStalled) &&
                    up_raddr_s >= ADDR_OUTPUT_START &&
                    up_raddr_s < ADDR_OUTPUT_END) ?
                    up_raddr_s - ADDR_OUTPUT_START : 0;
@@ -196,30 +197,39 @@ module axi_fft #(
   // registers read
   always @(posedge up_clk) begin
     if (up_resetn == 1'b0) begin
-      up_rack <= 'd0;
-      up_rdata <= 'd0;
+      up_rack <= 1'b0;
+      up_rdata <= 1'b0;
     end else begin
-      up_rack <= up_rreq_s;
-
-      if (up_rreq_s == 1'b1) begin
-        if (up_raddr_s >= ADDR_OUTPUT_START &&
-            up_raddr_s < ADDR_OUTPUT_END) begin
-          // FFT Output read
-          up_rdata <= oRData;          
+      if (up_raddr_s >= ADDR_OUTPUT_START &&
+          up_raddr_s < ADDR_OUTPUT_END &&
+          (up_rreq_s || oRDataStalled))
+      begin
+        // FFT Output read
+        if (oRDataStalled == 1'b0) begin
+          // Need to stall one clk to get output
+          oRDataStalled <= 1'b1;
+          up_rack <= 1'b0;
         end else begin
-          // Register read
-          case (up_raddr_s)
-            ADDR_VERSION:    up_rdata <= reg_version;
-            ADDR_PERI_ID:    up_rdata <= reg_peri_id;
-            ADDR_SCRATCH:    up_rdata <= reg_scratch;
-            ADDR_IDENT:      up_rdata <= reg_ident;
-            ADDR_FFT_CONFIG: up_rdata <= reg_fftConfig;
-            ADDR_STATUS:     up_rdata <= reg_status;
-            default: up_rdata <= 'd0;
-          endcase
+          // Send output
+          oRDataStalled <= 1'b0;
+          up_rack <= 1'b1;
+          up_rdata <= oRData;
         end
+      end else if (up_rreq_s == 1'b1) begin
+        // Register read
+        up_rack <= 1'b1;
+        case (up_raddr_s)
+          ADDR_VERSION:    up_rdata <= reg_version;
+          ADDR_PERI_ID:    up_rdata <= reg_peri_id;
+          ADDR_SCRATCH:    up_rdata <= reg_scratch;
+          ADDR_IDENT:      up_rdata <= reg_ident;
+          ADDR_FFT_CONFIG: up_rdata <= reg_fftConfig;
+          ADDR_STATUS:     up_rdata <= reg_status;
+          default: up_rdata <= 'b0;
+        endcase
       end else begin
-        up_rdata <= 'd0;
+        up_rack <= 1'b0;
+        up_rdata <= 1'b0;
       end
     end
   end
@@ -230,7 +240,6 @@ module axi_fft #(
       // Reset registers
       reg_scratch <= DEFAULT_SCRATCH;
       reg_fftConfig <= DEFAULT_FFT_CONFIG;
-      reg_status <= DEFAULT_STATUS;
     end else begin
       if (up_wreq_s == 1'b1) begin
         case (up_waddr_s)
@@ -246,24 +255,23 @@ module axi_fft #(
     if (up_resetn == 1'b1 &&
       up_wreq_s &&
       up_waddr_s >= ADDR_INPUT_START &&
-      up_waddr_s < ADDR_INPUT_END) begin
-        iWAddr <= up_waddr_s - ADDR_INPUT_START;
-        iWData <= up_wdata_s;
-        iWEn <= 1;
-      end else begin
-        iWEn <= 0;
-      end
+      up_waddr_s < ADDR_INPUT_END)
+    begin
+      iWAddr <= up_waddr_s - ADDR_INPUT_START;
+      iWData <= up_wdata_s;
+      iWEn <= 1;
+    end else begin
+      iWAddr <= 0;
+      iWData <= 0;
+      iWEn <= 0;
+    end
   end
 
   // Write triggers
   always @(posedge up_clk) begin
     if (up_resetn == 1'b1 && up_wreq_s) begin
       case (up_waddr_s)
-        ADDR_INPUT_TRIG: begin
-          iTrig <= 1;
-          // De-assert trans done bit when triggering a new block
-          reg_status[0] <= 0;
-        end
+        ADDR_INPUT_TRIG: iTrig <= 1;
         ADDR_CONFIG_TRIG: cCommitTrig <= 1;
         default: begin
           iTrig <= 0;
@@ -292,19 +300,17 @@ module axi_fft #(
     end
   end
 
-  // Reset for fft_data_input write lines
+  // Status done
   always @(posedge up_clk) begin
     if (up_resetn == 1'b0) begin
-      iWAddr <= 0;
-      iWData <= 0;
-      iWEn <= 0;
-    end
-  end
-
-  // Assert status done when received goes hi
-  always @(posedge up_clk) begin
-    if (up_resetn == 1'b1 && oReceived) begin
+      // reset
+      reg_status <= DEFAULT_STATUS;
+    end else if (up_resetn == 1'b1 && oReceived) begin
+      // Assert on transfer done
       reg_status[0] <= 1'b1;
+    end else if (up_resetn == 1'b1 && up_wreq_s && up_waddr_s == ADDR_INPUT_TRIG) begin
+      // De-assert trans done bit when triggering a new block
+      reg_status[0] <= 1'b0;
     end
   end
 endmodule
