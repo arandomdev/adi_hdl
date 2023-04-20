@@ -7,6 +7,7 @@ set mem_init_sys_path [get_env_param ADI_PROJECT_DIR ""]mem_init_sys.txt;
 # AXI_FFT
 # create cores
 # SCALE_SCH_WIDTH = 2*ceil(NFFT/2)
+# CONFIG_WIDTH = SCALE_SCH_WIDTH + 1, Round up to multiple of 8
 ad_ip_instance axi_fft axi_fft_0
 ad_ip_parameter axi_fft_0 CONFIG.NFFT 10
 ad_ip_parameter axi_fft_0 CONFIG.SCALE_SCH_WIDTH 10

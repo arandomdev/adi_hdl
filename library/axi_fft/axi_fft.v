@@ -2,8 +2,9 @@
 
 module axi_fft #(
   parameter integer NFFT = 3,
+  parameter integer VERSION = 1,
   parameter integer PERI_ID = 0,
-  parameter [31:0] IDENT = 32'h46465443, // FFTC
+  parameter integer IDENT = 32'h46465443, // FFTC
   parameter integer SCALE_SCH_WIDTH = 4,
   parameter integer CONFIG_WIDTH = 8 // Align to 8
 ) (
@@ -30,6 +31,8 @@ module axi_fft #(
   output      [31:0] s_axi_rdata,
   input              s_axi_rready,
 
+  output wire fft_resetn,
+
   // AXIS Master Interface for FFT Core data input
   input  wire        m_axis_i_tready,
   output wire        m_axis_i_tvalid,
@@ -43,9 +46,9 @@ module axi_fft #(
   input  wire [63:0] s_axis_o_tdata,
 
   // AXIS Master Interface for FFT Core config
-  input  wire                     m_axis_c_tready,
-  output wire                     m_axis_c_tvalid,
-  output wire                     m_axis_c_tlast,
+  input  wire                    m_axis_c_tready,
+  output wire                    m_axis_c_tvalid,
+  output wire                    m_axis_c_tlast,
   output wire [CONFIG_WIDTH-1:0] m_axis_c_tdata // {Scale Schedule, forward}
 );
   // Definitions
@@ -54,33 +57,32 @@ module axi_fft #(
   localparam integer ELEMENTS_ADDR_SIZE = $clog2(N_ELEMENTS);
 
   // up_axi emits DWORD addresses, hence 14 bit addresses
-  localparam [13:0] ADDR_VERSION =    'h0000;
-  localparam [13:0] ADDR_PERI_ID =    'h0001;
-  localparam [13:0] ADDR_SCRATCH =    'h0002;
-  localparam [13:0] ADDR_IDENT =      'h0003;
-  localparam [13:0] ADDR_FFT_CONFIG = 'h0004;
-  localparam [13:0] ADDR_STATUS =     'h0005;
+  localparam [13:0] ADDR_VERSION    = 'h0000;
+  localparam [13:0] ADDR_PERI_ID    = 'h0001;
+  localparam [13:0] ADDR_SCRATCH    = 'h0002;
+  localparam [13:0] ADDR_IDENT      = 'h0003;
+  localparam [13:0] ADDR_NFFT       = 'h0004;
 
-  localparam [13:0] ADDR_RESET =       'h0020;
-  localparam [13:0] ADDR_INPUT_TRIG =  'h0021;
+  localparam [13:0] ADDR_FFT_CONFIG = 'h0010;
+  localparam [13:0] ADDR_STATUS     = 'h0011;
+
+  localparam [13:0] ADDR_RESET       = 'h0020;
+  localparam [13:0] ADDR_INPUT_TRIG  = 'h0021;
   localparam [13:0] ADDR_CONFIG_TRIG = 'h0022;
 
-  localparam [13:0] ADDR_INPUT_START = 'h0040;
-  localparam [13:0] ADDR_INPUT_END = ADDR_INPUT_START + N_ELEMENTS;
+  localparam [13:0] ADDR_INPUT_START  = 'h0040;
+  localparam [13:0] ADDR_INPUT_END    = ADDR_INPUT_START + N_ELEMENTS;
   localparam [13:0] ADDR_OUTPUT_START = ADDR_INPUT_END;
-  localparam [13:0] ADDR_OUTPUT_END = ADDR_OUTPUT_START + N_ELEMENTS;
+  localparam [13:0] ADDR_OUTPUT_END   = ADDR_OUTPUT_START + N_ELEMENTS;
 
-  localparam [31:0] DEFAULT_SCRATCH = 32'h00000000;
+  localparam [31:0] DEFAULT_SCRATCH    = 32'h00000000;
   localparam [31:0] DEFAULT_FFT_CONFIG = 32'h00000001;
-  localparam [31:0] DEFAULT_STATUS = 32'h00000000;
+  localparam [31:0] DEFAULT_STATUS     = 32'h00000000;
 
   // AXI registers, 32bit words
-  reg [31:0] reg_version = 32'h00000001;
-  reg [31:0] reg_peri_id = PERI_ID;
-  reg [31:0] reg_scratch = DEFAULT_SCRATCH;
-  reg [31:0] reg_ident = IDENT;
+  reg [31:0] reg_scratch   = DEFAULT_SCRATCH;
   reg [31:0] reg_fftConfig = DEFAULT_FFT_CONFIG;
-  reg [31:0] reg_status = DEFAULT_STATUS; // status[0] = done
+  reg [31:0] reg_status    = DEFAULT_STATUS; // status[0] = done
 
   // Internal connections for up_axi
   wire up_clk = s_axi_aclk; // same as AXI
@@ -96,17 +98,20 @@ module axi_fft #(
   wire [13:0] up_waddr_s;
   wire [31:0] up_wdata_s;
 
+  // Run the FFT core on the same clock with controllable reset
+  assign fft_resetn = up_resetn;
+
   // Internal connections for fft_data_input
-  reg [ELEMENTS_ADDR_SIZE-1:0] iWAddr;
-  reg [31:0]                  iWData;
-  reg                         iWEn;
-  reg                         iTrig;
-  wire                        iStreaming;
+  reg  [ELEMENTS_ADDR_SIZE-1:0] iWAddr;
+  reg  [31:0]                   iWData;
+  reg                           iWEn;
+  reg                           iTrig;
+  wire                          iStreaming;
 
   // Internal connections for fft_data_output
   wire [ELEMENTS_ADDR_SIZE-1:0] oRAddr;
-  wire [31:0]                  oRData;
-  wire                         oReceived;
+  wire [31:0]                   oRData;
+  wire                          oReceived;
 
   // constant assignment to output address for one clock reads
   reg oRDataStalled = 1'b0;
@@ -219,10 +224,11 @@ module axi_fft #(
         // Register read
         up_rack <= 1'b1;
         case (up_raddr_s)
-          ADDR_VERSION:    up_rdata <= reg_version;
-          ADDR_PERI_ID:    up_rdata <= reg_peri_id;
+          ADDR_VERSION:    up_rdata <= VERSION;
+          ADDR_PERI_ID:    up_rdata <= PERI_ID;
           ADDR_SCRATCH:    up_rdata <= reg_scratch;
-          ADDR_IDENT:      up_rdata <= reg_ident;
+          ADDR_IDENT:      up_rdata <= IDENT;
+          ADDR_NFFT:       up_rdata <= NFFT;
           ADDR_FFT_CONFIG: up_rdata <= reg_fftConfig;
           ADDR_STATUS:     up_rdata <= reg_status;
           default: up_rdata <= 'b0;
