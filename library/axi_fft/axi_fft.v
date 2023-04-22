@@ -31,6 +31,7 @@ module axi_fft #(
   output      [31:0] s_axi_rdata,
   input              s_axi_rready,
 
+  // FFT Core connections
   output wire fft_resetn,
 
   // AXIS Master Interface for FFT Core data input
