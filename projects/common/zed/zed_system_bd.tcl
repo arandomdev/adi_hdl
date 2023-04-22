@@ -99,9 +99,6 @@ ad_ip_instance util_vector_logic sys_logic_inv
 ad_ip_parameter sys_logic_inv CONFIG.C_SIZE 1
 ad_ip_parameter sys_logic_inv CONFIG.C_OPERATION not
 
-# loopback_test
-ad_ip_instance axi_loopback_test axi_loopback_test_0
-
 # hdmi peripherals
 
 ad_ip_instance axi_clkgen axi_hdmi_clkgen
@@ -209,10 +206,6 @@ ad_connect  spi1_sdo_i sys_ps7/SPI1_MOSI_I
 ad_connect  spi1_sdo_o sys_ps7/SPI1_MOSI_O
 ad_connect  spi1_sdi_i sys_ps7/SPI1_MISO_I
 
-# lookback_test
-ad_connect sys_cpu_clk axi_loopback_test_0/s_axi_aclk
-ad_connect sys_cpu_resetn axi_loopback_test_0/s_axi_aresetn
-
 # hdmi
 
 ad_connect  sys_cpu_clk axi_hdmi_core/vdma_clk
@@ -303,7 +296,6 @@ ad_cpu_interconnect 0x70e00000 axi_hdmi_core
 ad_cpu_interconnect 0x75c00000 axi_spdif_tx_core
 ad_cpu_interconnect 0x77600000 axi_i2s_adi
 ad_cpu_interconnect 0x41620000 axi_iic_fmc
-ad_cpu_interconnect 0x44000000 axi_loopback_test_0
 
 ad_mem_hp0_interconnect sys_cpu_clk sys_ps7/S_AXI_HP0
 ad_mem_hp0_interconnect sys_cpu_clk axi_hdmi_dma/m_src_axi
